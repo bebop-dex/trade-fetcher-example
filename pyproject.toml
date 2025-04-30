@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "trade-fetcher-example"
+version = "0.1.0"
+packages = [{ include = "**/*" }]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.12"
+web3 = "6.19.0"
+eth-utils = "4.1.1"
+eth-account = "0.11.2"
+aiohttp = "3.10.6"
+hexbytes = "0.3.1"
+eth-typing = "3.5.2"
+pydantic = "2.9.2"
+typing-extensions = "4.12.2"
+pytest-asyncio = "0.24.0"
+cachetools = "5.5.0"
+uvicorn = "0.30.6"
+fastapi = "0.115.0"
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
