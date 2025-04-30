@@ -30,3 +30,9 @@ For adding quotes to memory use the following endpoint:
 When you detect bebop event using eth_subscribe or eth_getLogs, you can call following endpoint to extract filled quotes:
 
 `/GET localhost:8000/extract_quotes/{tx_hash}`
+
+Flow:
+1) receive ws-quote-request from bebop server
+2) respond to it and also call `/POST add_quote` to add this quote to trade-fetcher's memory
+3) detect tx_hash with bebop event in it using eth_subscribe or eth_getLogs
+4) call `/GET extract_quotes/{tx_hash}` to get information about filled amounts onchain
