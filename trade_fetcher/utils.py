@@ -66,39 +66,55 @@ class MakerQuote(BaseModel):
     def ordered_transfers(self) -> list[Transfer]:
         if self.order_signing_type == "SingleOrder":
             return [
-                Transfer(from_address=None, to_address=self.maker_address, is_maker_token=False, index_in_tokens=0),
-                Transfer(from_address=self.maker_address, to_address=None, is_maker_token=True, index_in_tokens=0),
+                Transfer(
+                    token_address=self.quotes[0].taker_token,
+                    from_address=None,
+                    to_address=self.maker_address,
+                    is_maker_token=False,
+                    index_in_tokens=0,
+                ),
+                Transfer(
+                    token_address=self.quotes[0].maker_token,
+                    from_address=self.maker_address,
+                    to_address=None,
+                    is_maker_token=True,
+                    index_in_tokens=0,
+                ),
             ]
 
         taker_transfers: list[Transfer] = []
         maker_transfers: list[Transfer] = []
         pending_transfers_to_makers: list[Transfer] = []
         maker_commands: list[Command] = [
-            Command(self.commands[(i + 1) * 2 : (i + 2) * 2]) for i in range(len(self.maker_tokens))
+            Command(self.commands[(i + 1) * 2: (i + 2) * 2]) for i in range(len(self.maker_tokens))
         ]
         taker_commands: list[Command] = [
-            Command(self.commands[(i + 1 + len(self.maker_tokens)) * 2 : (i + 2 + len(self.maker_tokens)) * 2])
+            Command(self.commands[(i + 1 + len(self.maker_tokens)) * 2: (i + 2 + len(self.maker_tokens)) * 2])
             for i in range(len(self.taker_tokens))
         ]
         for i, (maker_command, maker_token) in enumerate(zip(maker_commands, self.maker_tokens, strict=True)):
             if maker_command == Command.SIMPLE_TRANSFER:
-                maker_transfers.append(Transfer(self.maker_address, self.receiver_address, True, i))
+                maker_transfers.append(Transfer(maker_token, self.maker_address, self.receiver_address, True, i))
             elif maker_command in {Command.TRANSFER_TO_CONTRACT, Command.NATIVE_TRANSFER}:
-                maker_transfers.append(Transfer(self.maker_address, PMM_CONTRACT_ADDRESS, True, i))
+                maker_transfers.append(Transfer(maker_token, self.maker_address, PMM_CONTRACT_ADDRESS, True, i))
             else:
                 raise ValueError(f"Unknown maker command: {maker_command}")
 
         for i, (taker_command, taker_token) in enumerate(zip(taker_commands, self.taker_tokens, strict=True)):
             if taker_command in {
-                Command.SIMPLE_TRANSFER, Command.PERMIT2_TRANSFER,
-                Command.CALL_PERMIT_THEN_TRANSFER, Command.CALL_PERMIT2_THEN_TRANSFER
+                Command.SIMPLE_TRANSFER,
+                Command.PERMIT2_TRANSFER,
+                Command.CALL_PERMIT_THEN_TRANSFER,
+                Command.CALL_PERMIT2_THEN_TRANSFER,
             }:
-                taker_transfers.append(Transfer(self.taker_address, self.maker_address, False, i))
+                taker_transfers.append(Transfer(taker_token, self.taker_address, self.maker_address, False, i))
             elif taker_command in {Command.TRANSFER_FROM_CONTRACT, Command.NATIVE_TRANSFER}:
                 if self.is_aggregate_order:
-                    pending_transfers_to_makers.append(Transfer(PMM_CONTRACT_ADDRESS, self.maker_address, False, i))
+                    pending_transfers_to_makers.append(
+                        Transfer(taker_token, PMM_CONTRACT_ADDRESS, self.maker_address, False, i)
+                    )
                 else:
-                    taker_transfers.append(Transfer(PMM_CONTRACT_ADDRESS, self.maker_address, False, i))
+                    taker_transfers.append(Transfer(taker_token, PMM_CONTRACT_ADDRESS, self.maker_address, False, i))
             else:
                 raise ValueError(f"Unknown taker command: {taker_command}")
 
@@ -180,6 +196,7 @@ class FilledQuote(BaseModel):
 
 @dataclass
 class Transfer:
+    token_address: str
     from_address: str | None
     to_address: str | None
     is_maker_token: bool

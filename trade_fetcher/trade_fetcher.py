@@ -37,8 +37,12 @@ class TradeFetcher:
                 cur_transfers = self.event_id_to_quote[cur_event_id].ordered_transfers
                 cur_transfers.reverse()
                 cur_transfer_index = 0
-            elif log["topics"][0].hex() == TRANSFER_TOPIC and len(cur_transfers) > 0 and \
-                    cur_transfer_index < len(cur_transfers):
+            elif (
+                log["topics"][0].hex() == TRANSFER_TOPIC
+                and len(cur_transfers) > 0
+                and cur_transfer_index < len(cur_transfers)
+                and log["address"].lower() == cur_transfers[cur_transfer_index].token_address.lower()
+            ):
                 from_address = AsyncWeb3.to_checksum_address(f"0x{log['topics'][1].hex()[26:]}")
                 to_address = AsyncWeb3.to_checksum_address(f"0x{log['topics'][2].hex()[26:]}")
                 amount: int = int(log["data"].hex(), 16)
